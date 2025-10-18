@@ -12,33 +12,46 @@
 <button onclick="login()">Login</button>
 <button onclick="loginGoogle()">Login with Google</button>
 
+<p id="status"></p>
+
 <script type="module">
 import { auth, provider } from './firebase.js';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
-// Register with email & password
+const status = document.getElementById('status');
+
 window.register = () => {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
   createUserWithEmailAndPassword(auth, email, password)
-    .then(() => alert("Registered successfully!"))
-    .catch(err => alert(err.message));
+    .then(userCredential => {
+      const user = userCredential.user;
+      sendEmailVerification(user)
+        .then(() => status.textContent = "Registered! Please check your email for verification link.");
+    })
+    .catch(err => status.textContent = err.message);
 }
 
-// Login with email & password
 window.login = () => {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
   signInWithEmailAndPassword(auth, email, password)
-    .then(() => { window.location.href = 'users.html'; })
-    .catch(err => alert(err.message));
+    .then(userCredential => {
+      const user = userCredential.user;
+      if(user.emailVerified){
+        status.textContent = "Logged in successfully!";
+      } else {
+        status.textContent = "Please verify your email before logging in.";
+        auth.signOut();
+      }
+    })
+    .catch(err => status.textContent = err.message);
 }
 
-// Login with Google
 window.loginGoogle = () => {
   signInWithPopup(auth, provider)
-    .then(() => { window.location.href = 'users.html'; })
-    .catch(err => alert(err.message));
+    .then(() => { status.textContent = "Logged in with Google!"; })
+    .catch(err => status.textContent = err.message);
 }
 </script>
 </body>
