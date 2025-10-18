@@ -8,6 +8,7 @@
   body { font-family: Arial; max-width:500px; margin:30px auto; padding:0 16px; }
   input, button { padding:8px; margin:6px 0; width:100%; box-sizing:border-box; }
   #status { margin-top:10px; color:#222; }
+  .btn-small { width:auto; padding:6px 10px; margin:4px 4px 12px 0; }
 </style>
 </head>
 <body>
@@ -23,6 +24,7 @@
 
   <button id="registerBtn">Register</button>
   <button id="loginBtn">Login</button>
+  <button id="resetBtn" class="btn-small">Reset Password</button>
 
   <p id="status"></p>
 </div>
@@ -33,6 +35,7 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   sendEmailVerification,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   signOut
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
@@ -41,6 +44,7 @@ const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const registerBtn = document.getElementById('registerBtn');
 const loginBtn = document.getElementById('loginBtn');
+const resetBtn = document.getElementById('resetBtn');
 const statusEl = document.getElementById('status');
 const authContainer = document.getElementById('authContainer');
 
@@ -88,6 +92,23 @@ loginBtn.addEventListener('click', async () => {
     } else {
       statusEl.textContent = `Please verify your email before logging in. We sent a verification code to ${maskEmail(email)}. Check inbox or spam.`;
     }
+  } catch(err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    console.error(err);
+  }
+});
+
+// Reset password
+resetBtn.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+  if (!email) { 
+    statusEl.textContent = 'Enter email to reset password'; 
+    return; 
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, email);
+    statusEl.textContent = `Password reset email sent to ${maskEmail(email)}. Check inbox or spam.`;
   } catch(err) {
     statusEl.textContent = 'Error: ' + err.message;
     console.error(err);
