@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Users</title>
+</head>
+<body>
+<h1>Users List</h1>
+
+<!-- Password form -->
+<div id="passwordDiv">
+  <input type="password" id="adminPassword" placeholder="Enter admin password">
+  <button onclick="checkPassword()">Submit</button>
+</div>
+
+<ul id="userList" style="display:none;"></ul>
+
+<script type="module">
+import { auth } from './firebase.js';
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+// Check admin password
+function checkPassword() {
+  const pwd = document.getElementById('adminPassword').value;
+  if(pwd === 'admin') {
+    document.getElementById('passwordDiv').style.display = 'none';
+    document.getElementById('userList').style.display = 'block';
+  } else {
+    alert("Incorrect password!");
+  }
+}
+
+// Check if user is logged in with Firebase
+onAuthStateChanged(auth, user => {
+  if(!user){
+    alert("You are not logged in!");
+    window.location.href = "index.html";
+  }
+});
+</script>
+</body>
+</html>
