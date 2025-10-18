@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login</title>
+</head>
+<body>
+<h1>Login / Registration</h1>
+
+<input id="email" placeholder="Email">
+<input id="password" type="password" placeholder="Password">
+<button onclick="register()">Register</button>
+<button onclick="login()">Login</button>
+<button onclick="loginGoogle()">Login with Google</button>
+
+<script type="module">
+import { auth, provider } from './firebase.js';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+// Register with email & password
+window.register = () => {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  createUserWithEmailAndPassword(auth, email, password)
+    .then(() => alert("Registered successfully!"))
+    .catch(err => alert(err.message));
+}
+
+// Login with email & password
+window.login = () => {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  signInWithEmailAndPassword(auth, email, password)
+    .then(() => { window.location.href = 'users.html'; })
+    .catch(err => alert(err.message));
+}
+
+// Login with Google
+window.loginGoogle = () => {
+  signInWithPopup(auth, provider)
+    .then(() => { window.location.href = 'users.html'; })
+    .catch(err => alert(err.message));
+}
+</script>
+</body>
+</html>
