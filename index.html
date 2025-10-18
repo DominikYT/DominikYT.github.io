@@ -1,81 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Phone Login (Firebase)</title>
-  <style>
-    body { font-family: Arial; max-width:600px; margin:30px auto; padding:0 16px; }
-    input, button { padding:8px; margin:6px 0; width:100%; box-sizing:border-box; }
-    #status { margin-top:10px; color:#222; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Login & Registration</title>
+<style>
+  body { font-family: Arial; max-width:500px; margin:30px auto; padding:0 16px; }
+  input, button { padding:8px; margin:6px 0; width:100%; box-sizing:border-box; }
+  #status { margin-top:10px; color:#222; }
+</style>
 </head>
 <body>
 
-<h1>Phone Login (Firebase)</h1>
+<h1>Email Registration & Login</h1>
 
-<p>Use test number configured in Firebase Console (Authentication → Sign-in method → Phone → Phone numbers for testing).</p>
+<label>Email:</label>
+<input id="email" type="email" placeholder="Enter email">
 
-<label>Phone number</label>
-<input id="phoneNumber" type="tel" placeholder="+48123456789">
+<label>Password:</label>
+<input id="password" type="password" placeholder="Enter password">
 
-<div id="recaptcha-container"></div>
-
-<button id="sendCodeBtn">Send Verification Code</button>
-
-<label>Verification Code</label>
-<input id="verificationCode" type="text" placeholder="Enter code">
-
-<button id="verifyCodeBtn">Verify Code</button>
+<button id="registerBtn">Register</button>
+<button id="loginBtn">Login</button>
 
 <p id="status"></p>
 
 <script type="module">
 import { auth } from './firebase.js';
-import { RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
-const phoneInput = document.getElementById('phoneNumber');
-const codeInput = document.getElementById('verificationCode');
-const sendBtn = document.getElementById('sendCodeBtn');
-const verifyBtn = document.getElementById('verifyCodeBtn');
+const emailInput = document.getElementById('email');
+const passwordInput = document.getElementById('password');
+const registerBtn = document.getElementById('registerBtn');
+const loginBtn = document.getElementById('loginBtn');
 const statusEl = document.getElementById('status');
 
-let confirmationResult = null;
+// Funkcja do maskowania emaila dla komunikatu
+function maskEmail(email) {
+  const [name, domain] = email.split("@");
+  if (name.length <= 1) return "*" + "@" + domain;
+  return name[0] + "*".repeat(name.length-1) + "@" + domain;
+}
 
-// Initialize reCAPTCHA after auth is imported
-window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
-  'size': 'normal',
-  'callback': () => { console.log('reCAPTCHA solved'); },
-  'expired-callback': () => { statusEl.textContent = 'reCAPTCHA expired. Solve it again.'; }
-}, auth);
+// Register
+registerBtn.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  if (!email || !password) { statusEl.textContent = 'Enter email and password'; return; }
 
-// Send SMS code
-sendBtn.addEventListener('click', async () => {
-  const phoneNumber = phoneInput.value.trim();
-  if (!phoneNumber) { statusEl.textContent = 'Enter phone number'; return; }
-
-  statusEl.textContent = 'Sending code...';
   try {
-    confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
-    statusEl.textContent = 'Code sent! Use test code if configured.';
-  } catch (err) {
-    statusEl.textContent = 'Error sending code: ' + err.message;
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    await sendEmailVerification(userCredential.user);
+    statusEl.textContent = `Registered! Verification email sent to ${maskEmail(email)}. Check your inbox.`;
+  } catch(err) {
+    statusEl.textContent = 'Error: ' + err.message;
     console.error(err);
   }
 });
 
-// Verify SMS code
-verifyBtn.addEventListener('click', async () => {
-  const code = codeInput.value.trim();
-  if (!confirmationResult) { statusEl.textContent = 'Request code first'; return; }
+// Login
+loginBtn.addEventListener('click', async () => {
+  const email = emailInput.value.trim();
+  const password = passwordInput.value.trim();
+  if (!email || !password) { statusEl.textContent = 'Enter email and password'; return; }
 
-  statusEl.textContent = 'Verifying...';
   try {
-    const result = await confirmationResult.confirm(code);
-    const user = result.user;
-    statusEl.textContent = `Phone verified! UID: ${user.uid}`;
-  } catch (err) {
-    statusEl.textContent = 'Error verifying code: ' + err.message;
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    if (user.emailVerified) {
+      statusEl.textContent = 'Logged in successfully!';
+    } else {
+      statusEl.textContent = `Please verify your email. We sent a verification code to ${maskEmail(email)}.`;
+    }
+  } catch(err) {
+    statusEl.textContent = 'Error: ' + err.message;
     console.error(err);
   }
 });
