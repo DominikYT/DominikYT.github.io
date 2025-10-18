@@ -1,59 +1,185 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Phone Login</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Phone Login (Firebase + reCAPTCHA)</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width:700px; margin:40px auto; padding:0 16px; color:#111; }
+    input { padding:8px; margin:6px 0; width:100%; box-sizing:border-box; }
+    button { padding:10px 14px; margin:6px 4px 12px 0; }
+    #status { margin-top:12px; color:#222; }
+    .hidden { display:none; }
+    .small { font-size:0.9rem; color:#555; }
+  </style>
 </head>
 <body>
-<h1>Login / Phone Verification</h1>
+  <h1>Phone Login (Firebase)</h1>
+  <p class="small">Enter your phone in international format (e.g. <code>+48123456789</code>). For testing add a test number + code in Firebase Console.</p>
 
-<input id="phoneNumber" placeholder="+48123456789">
-<div id="recaptcha-container"></div>
-<button id="sendCodeBtn">Send Verification Code</button>
+  <label for="phoneNumber">Phone number</label>
+  <input id="phoneNumber" type="tel" placeholder="+48123456789" autocomplete="tel">
 
-<input id="verificationCode" placeholder="Enter code">
-<button id="verifyCodeBtn">Verify Code</button>
+  <!-- reCAPTCHA widget will render here -->
+  <div id="recaptcha-container"></div>
 
-<p id="status"></p>
+  <div>
+    <button id="sendCodeBtn">Send verification code (SMS)</button>
+    <button id="resetRecaptchaBtn" class="small">Reset reCAPTCHA</button>
+  </div>
 
-<script type="module">
-import { auth } from './firebase.js';
-import { RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  <label for="verificationCode">Verification code</label>
+  <input id="verificationCode" type="text" placeholder="Enter received code">
 
-const status = document.getElementById('status');
-const sendCodeBtn = document.getElementById('sendCodeBtn');
-const verifyCodeBtn = document.getElementById('verifyCodeBtn');
+  <div>
+    <button id="verifyCodeBtn">Verify code / Sign in</button>
+  </div>
 
-let confirmationResult;
+  <p id="status"></p>
 
-// Initialize reCAPTCHA
-window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
-  'size': 'normal',
-  'callback': (response) => {
-    console.log('reCAPTCHA solved');
+  <script type="module">
+  // index.html (module)
+  import { auth } from './firebase.js';
+  import {
+    RecaptchaVerifier,
+    signInWithPhoneNumber
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+  const phoneInput = document.getElementById('phoneNumber');
+  const sendBtn = document.getElementById('sendCodeBtn');
+  const verifyBtn = document.getElementById('verifyCodeBtn');
+  const codeInput = document.getElementById('verificationCode');
+  const statusEl = document.getElementById('status');
+  const resetRecaptchaBtn = document.getElementById('resetRecaptchaBtn');
+
+  let confirmationResult = null;
+  let widgetId = null;
+
+  // Helper: set status text
+  function setStatus(msg, isError = false) {
+    statusEl.textContent = msg || '';
+    statusEl.style.color = isError ? '#b00020' : '#006600';
   }
-}, auth);
 
-// Send verification code via SMS
-sendCodeBtn.addEventListener('click', () => {
-  const phoneNumber = document.getElementById('phoneNumber').value;
-  signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier)
-    .then(result => {
-      confirmationResult = result;
-      status.textContent = "Code sent! Check your phone.";
-    })
-    .catch(err => status.textContent = err.message);
-});
+  // Initialize reCAPTCHA verifier
+  function initRecaptcha(size = 'normal') {
+    // If there was a previous widget, try to clear it
+    try {
+      if (window.recaptchaVerifier && typeof window.recaptchaVerifier.clear === 'function') {
+        // some SDK versions provide clear()
+        window.recaptchaVerifier.clear();
+      }
+    } catch(e){ /* ignore */ }
 
-// Verify code
-verifyCodeBtn.addEventListener('click', () => {
-  const code = document.getElementById('verificationCode').value;
-  confirmationResult.confirm(code)
-    .then(result => {
+    window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
+      'size': size, // 'normal' shows widget, 'invisible' hides it
+      'callback': (response) => {
+        // reCAPTCHA solved - will be used implicitly by signInWithPhoneNumber
+        console.log('reCAPTCHA solved');
+      },
+      'expired-callback': () => {
+        setStatus('reCAPTCHA expired — please solve it again.', true);
+      }
+    }, auth);
+
+    // render returns widget id in some SDKs
+    try {
+      widgetId = window.recaptchaVerifier.render();
+    } catch (e) {
+      widgetId = null;
+    }
+  }
+
+  initRecaptcha('normal'); // initialize visible reCAPTCHA by default
+
+  // Reset reCAPTCHA on demand (useful during debugging)
+  resetRecaptchaBtn.addEventListener('click', () => {
+    try {
+      if (widgetId !== null && window.grecaptcha && window.grecaptcha.reset) {
+        window.grecaptcha.reset(widgetId);
+        setStatus('reCAPTCHA reset — please solve it again.');
+      } else {
+        // Re-create verifier
+        initRecaptcha('normal');
+        setStatus('reCAPTCHA re-initialized.');
+      }
+    } catch (err) {
+      setStatus('Could not reset reCAPTCHA: ' + err.message, true);
+    }
+  });
+
+  // Send verification SMS
+  sendBtn.addEventListener('click', async () => {
+    const phoneNumber = phoneInput.value.trim();
+    if (!phoneNumber) {
+      setStatus('Please enter phone number (e.g. +48123456789).', true);
+      return;
+    }
+
+    setStatus('Sending verification code...');
+    sendBtn.disabled = true;
+    verifyBtn.disabled = true;
+
+    try {
+      // signInWithPhoneNumber uses window.recaptchaVerifier internally
+      confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+      setStatus('Code sent. Please check your phone (or use test code if configured).');
+    } catch (err) {
+      // Often reCAPTCHA or config issues: show error and reset verifier
+      setStatus('Error sending code: ' + (err.message || err), true);
+      console.error(err);
+      // Re-init reCAPTCHA to allow retry
+      initRecaptcha('normal');
+    } finally {
+      sendBtn.disabled = false;
+      verifyBtn.disabled = false;
+    }
+  });
+
+  // Verify code and sign in
+  verifyBtn.addEventListener('click', async () => {
+    const code = codeInput.value.trim();
+    if (!code) {
+      setStatus('Please enter the verification code you received.', true);
+      return;
+    }
+    if (!confirmationResult) {
+      setStatus('You must request a verification code first.', true);
+      return;
+    }
+
+    setStatus('Verifying code...');
+    verifyBtn.disabled = true;
+
+    try {
+      const result = await confirmationResult.confirm(code);
       const user = result.user;
-      status.textContent = `Phone verified! User UID: ${user.uid}`;
-    })
-    .catch(err => status.textContent = err.message);
-});
-</script>
+      setStatus('Phone verified! Signed in as: ' + (user.phoneNumber || user.uid));
+      // You can now use auth.currentUser or redirect as needed.
+      // Example: display user info or store in Firestore, etc.
+    } catch (err) {
+      setStatus('Error verifying code: ' + (err.message || err), true);
+      console.error(err);
+      // on failure you might want to re-init recaptcha
+      initRecaptcha('normal');
+    } finally {
+      verifyBtn.disabled = false;
+    }
+  });
+
+  // Optional: auto-detect sign-in state changes
+  import("https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js").then(mod => {
+    const { onAuthStateChanged } = mod;
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        // user is signed in
+        console.log('Auth state: signed in', user);
+      } else {
+        console.log('Auth state: signed out');
+      }
+    });
+  });
+
+  </script>
 </body>
 </html>
