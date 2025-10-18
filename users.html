@@ -6,7 +6,6 @@
 <body>
 <h1>Users List</h1>
 
-<!-- Password form -->
 <div id="passwordDiv">
   <input type="password" id="adminPassword" placeholder="Enter admin password">
   <button id="submitPwd">Submit</button>
@@ -18,25 +17,31 @@
 import { auth } from './firebase.js';
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
+// DOM elements
 const passwordInput = document.getElementById('adminPassword');
 const submitBtn = document.getElementById('submitPwd');
 const passwordDiv = document.getElementById('passwordDiv');
 const userList = document.getElementById('userList');
 
-submitBtn.addEventListener('click', () => {
-  if(passwordInput.value === 'admin') {
-    passwordDiv.style.display = 'none';
-    userList.style.display = 'block';
-  } else {
-    alert("Incorrect password!");
-  }
-});
-
-// Check if user is logged in via Firebase
+// Firebase login check
 onAuthStateChanged(auth, user => {
   if(!user){
     alert("You are not logged in!");
     window.location.href = "index.html";
+  }
+});
+
+// Check admin password
+submitBtn.addEventListener('click', () => {
+  const pwd = passwordInput.value.trim();
+  if(pwd === "admin") {
+    passwordDiv.style.display = "none";
+    userList.style.display = "block";
+    const li = document.createElement('li');
+    li.textContent = auth.currentUser.email; // Show logged-in user email
+    userList.appendChild(li);
+  } else {
+    alert("Incorrect password!");
   }
 });
 </script>
