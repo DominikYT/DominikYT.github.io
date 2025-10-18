@@ -12,30 +12,39 @@
 </head>
 <body>
 
-<h1>Email Registration & Login</h1>
+<div id="authContainer">
+  <h1>Email Registration & Login</h1>
 
-<label>Email:</label>
-<input id="email" type="email" placeholder="Enter email">
+  <label>Email:</label>
+  <input id="email" type="email" placeholder="Enter email">
 
-<label>Password:</label>
-<input id="password" type="password" placeholder="Enter password">
+  <label>Password:</label>
+  <input id="password" type="password" placeholder="Enter password">
 
-<button id="registerBtn">Register</button>
-<button id="loginBtn">Login</button>
+  <button id="registerBtn">Register</button>
+  <button id="loginBtn">Login</button>
 
-<p id="status"></p>
+  <p id="status"></p>
+</div>
 
 <script type="module">
 import { auth } from './firebase.js';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  sendEmailVerification,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 const emailInput = document.getElementById('email');
 const passwordInput = document.getElementById('password');
 const registerBtn = document.getElementById('registerBtn');
 const loginBtn = document.getElementById('loginBtn');
 const statusEl = document.getElementById('status');
+const authContainer = document.getElementById('authContainer');
 
-// Funkcja do maskowania emaila dla komunikatu
+// Helper: mask email for privacy
 function maskEmail(email) {
   const [name, domain] = email.split("@");
   if (name.length <= 1) return "*" + "@" + domain;
@@ -46,12 +55,15 @@ function maskEmail(email) {
 registerBtn.addEventListener('click', async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
-  if (!email || !password) { statusEl.textContent = 'Enter email and password'; return; }
+  if (!email || !password) { 
+    statusEl.textContent = 'Enter email and password'; 
+    return; 
+  }
 
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await sendEmailVerification(userCredential.user);
-    statusEl.textContent = `Registered! Verification email sent to ${maskEmail(email)}. Check your inbox.`;
+    statusEl.textContent = `Registered! Verification email sent to ${maskEmail(email)}. Please check your inbox or spam folder.`;
   } catch(err) {
     statusEl.textContent = 'Error: ' + err.message;
     console.error(err);
@@ -62,19 +74,42 @@ registerBtn.addEventListener('click', async () => {
 loginBtn.addEventListener('click', async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value.trim();
-  if (!email || !password) { statusEl.textContent = 'Enter email and password'; return; }
+  if (!email || !password) { 
+    statusEl.textContent = 'Enter email and password'; 
+    return; 
+  }
 
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     if (user.emailVerified) {
-      statusEl.textContent = 'Logged in successfully!';
+      statusEl.textContent = '';
+      showWelcomeScreen(user.email);
     } else {
-      statusEl.textContent = `Please verify your email. We sent a verification code to ${maskEmail(email)}.`;
+      statusEl.textContent = `Please verify your email before logging in. We sent a verification code to ${maskEmail(email)}. Check inbox or spam.`;
     }
   } catch(err) {
     statusEl.textContent = 'Error: ' + err.message;
     console.error(err);
+  }
+});
+
+// Show welcome screen after login
+function showWelcomeScreen(email) {
+  authContainer.innerHTML = `
+    <h2>Welcome, ${email}!</h2>
+    <button id="logoutBtn">Logout</button>
+  `;
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await signOut(auth);
+    location.reload();
+  });
+}
+
+// Auto-detect logged in user
+onAuthStateChanged(auth, (user) => {
+  if (user && user.emailVerified) {
+    showWelcomeScreen(user.email);
   }
 });
 </script>
