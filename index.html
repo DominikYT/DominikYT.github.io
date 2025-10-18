@@ -1,58 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Login</title>
+  <title>Phone Login</title>
 </head>
 <body>
-<h1>Login / Registration</h1>
+<h1>Login / Phone Verification</h1>
 
-<input id="email" placeholder="Email">
-<input id="password" type="password" placeholder="Password">
-<button onclick="register()">Register</button>
-<button onclick="login()">Login</button>
-<button onclick="loginGoogle()">Login with Google</button>
+<input id="phoneNumber" placeholder="+48123456789">
+<div id="recaptcha-container"></div>
+<button id="sendCodeBtn">Send Verification Code</button>
+
+<input id="verificationCode" placeholder="Enter code">
+<button id="verifyCodeBtn">Verify Code</button>
 
 <p id="status"></p>
 
 <script type="module">
-import { auth, provider } from './firebase.js';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { auth } from './firebase.js';
+import { RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
 const status = document.getElementById('status');
+const sendCodeBtn = document.getElementById('sendCodeBtn');
+const verifyCodeBtn = document.getElementById('verifyCodeBtn');
 
-window.register = () => {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  createUserWithEmailAndPassword(auth, email, password)
-    .then(userCredential => {
-      const user = userCredential.user;
-      sendEmailVerification(user)
-        .then(() => status.textContent = "Registered! Please check your email for verification link.");
+let confirmationResult;
+
+// Initialize reCAPTCHA
+window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
+  'size': 'normal',
+  'callback': (response) => {
+    console.log('reCAPTCHA solved');
+  }
+}, auth);
+
+// Send verification code via SMS
+sendCodeBtn.addEventListener('click', () => {
+  const phoneNumber = document.getElementById('phoneNumber').value;
+  signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier)
+    .then(result => {
+      confirmationResult = result;
+      status.textContent = "Code sent! Check your phone.";
     })
     .catch(err => status.textContent = err.message);
-}
+});
 
-window.login = () => {
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  signInWithEmailAndPassword(auth, email, password)
-    .then(userCredential => {
-      const user = userCredential.user;
-      if(user.emailVerified){
-        status.textContent = "Logged in successfully!";
-      } else {
-        status.textContent = "Please verify your email before logging in.";
-        auth.signOut();
-      }
+// Verify code
+verifyCodeBtn.addEventListener('click', () => {
+  const code = document.getElementById('verificationCode').value;
+  confirmationResult.confirm(code)
+    .then(result => {
+      const user = result.user;
+      status.textContent = `Phone verified! User UID: ${user.uid}`;
     })
     .catch(err => status.textContent = err.message);
-}
-
-window.loginGoogle = () => {
-  signInWithPopup(auth, provider)
-    .then(() => { status.textContent = "Logged in with Google!"; })
-    .catch(err => status.textContent = err.message);
-}
+});
 </script>
 </body>
 </html>
