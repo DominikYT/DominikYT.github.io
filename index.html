@@ -1,138 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Email Login & Registration</title>
-<style>
-  body { font-family: Arial; max-width:500px; margin:30px auto; padding:0 16px; }
-  input, button { padding:8px; margin:6px 0; width:100%; box-sizing:border-box; }
-  #status { margin-top:10px; color:#222; }
-  .btn-small { width:auto; padding:6px 10px; margin:4px 4px 12px 0; }
-</style>
+<title>Bank Demo</title>
+<link rel="stylesheet" href="style.css">
+<script type="module" src="main.js" defer></script>
 </head>
 <body>
+  <h1>Bank Demo</h1>
 
-<div id="authContainer">
-  <h1>Email Registration & Login</h1>
+  <div id="register-container">
+    <h2>Rejestracja</h2>
+    <input type="email" id="register-email" placeholder="Email">
+    <input type="password" id="register-password" placeholder="Hasło">
+    <button id="register-btn">Zarejestruj</button>
+  </div>
 
-  <label>Email:</label>
-  <input id="email" type="email" placeholder="Enter email">
-
-  <label>Password:</label>
-  <input id="password" type="password" placeholder="Enter password">
-
-  <button id="registerBtn">Register</button>
-  <button id="loginBtn">Login</button>
-  <button id="resetBtn" class="btn-small">Reset Password</button>
-
-  <p id="status"></p>
-</div>
-
-<script type="module">
-import { auth } from './firebase.js';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  onAuthStateChanged,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-
-const emailInput = document.getElementById('email');
-const passwordInput = document.getElementById('password');
-const registerBtn = document.getElementById('registerBtn');
-const loginBtn = document.getElementById('loginBtn');
-const resetBtn = document.getElementById('resetBtn');
-const statusEl = document.getElementById('status');
-const authContainer = document.getElementById('authContainer');
-
-// Helper: mask email for privacy
-function maskEmail(email) {
-  const [name, domain] = email.split("@");
-  if (name.length <= 1) return "*" + "@" + domain;
-  return name[0] + "*".repeat(name.length-1) + "@" + domain;
-}
-
-// Register
-registerBtn.addEventListener('click', async () => {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value.trim();
-  if (!email || !password) { 
-    statusEl.textContent = 'Enter email and password'; 
-    return; 
-  }
-
-  try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    await sendEmailVerification(userCredential.user);
-    statusEl.textContent = `Registered! Verification email sent to ${maskEmail(email)}. Please check your inbox or spam folder.`;
-  } catch(err) {
-    statusEl.textContent = 'Error: ' + err.message;
-    console.error(err);
-  }
-});
-
-// Login
-loginBtn.addEventListener('click', async () => {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value.trim();
-  if (!email || !password) { 
-    statusEl.textContent = 'Enter email and password'; 
-    return; 
-  }
-
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-    if (user.emailVerified) {
-      statusEl.textContent = '';
-      showWelcomeScreen(user.email);
-    } else {
-      statusEl.textContent = `Please verify your email before logging in. We sent a verification code to ${maskEmail(email)}. Check inbox or spam.`;
-    }
-  } catch(err) {
-    statusEl.textContent = 'Error: ' + err.message;
-    console.error(err);
-  }
-});
-
-// Reset password
-resetBtn.addEventListener('click', async () => {
-  const email = emailInput.value.trim();
-  if (!email) { 
-    statusEl.textContent = 'Enter email to reset password'; 
-    return; 
-  }
-
-  try {
-    await sendPasswordResetEmail(auth, email);
-    statusEl.textContent = `Password reset email sent to ${maskEmail(email)}. Check inbox or spam.`;
-  } catch(err) {
-    statusEl.textContent = 'Error: ' + err.message;
-    console.error(err);
-  }
-});
-
-// Show welcome screen after login
-function showWelcomeScreen(email) {
-  authContainer.innerHTML = `
-    <h2>Welcome, ${email}!</h2>
-    <button id="logoutBtn">Logout</button>
-  `;
-  document.getElementById('logoutBtn').addEventListener('click', async () => {
-    await signOut(auth);
-    location.reload();
-  });
-}
-
-// Auto-detect logged in user
-onAuthStateChanged(auth, (user) => {
-  if (user && user.emailVerified) {
-    showWelcomeScreen(user.email);
-  }
-});
-</script>
+  <div id="login-container">
+    <h2>Logowanie</h2>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Hasło">
+    <button id="login-btn">Zaloguj</button>
+  </div>
 </body>
 </html>
