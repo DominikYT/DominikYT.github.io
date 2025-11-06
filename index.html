@@ -22,6 +22,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     .logo {
@@ -76,22 +79,53 @@
       background: #333;
     }
 
+    /* 🛒 Modal koszyka */
     #cart-modal {
       position: fixed;
       top: 10%;
       left: 50%;
       transform: translateX(-50%);
       background: white;
-      padding: 2rem;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      padding: 1rem;
+      box-shadow: 0 0 15px rgba(0,0,0,0.4);
       border-radius: 10px;
       width: 90%;
       max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
       z-index: 100;
+    }
+
+    #cart-items li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    #cart-items li button {
+      background: #e74c3c;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.8rem;
+    }
+
+    #cart-items li button:hover {
+      background: #c0392b;
     }
 
     .hidden {
       display: none;
+    }
+
+    /* 🔒 Tło za koszykiem */
+    #overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 99;
     }
   </style>
 </head>
@@ -106,7 +140,8 @@
     <div class="product-list" id="product-list"></div>
   </main>
 
-  <!-- Modal koszyka -->
+  <!-- 🛒 Modal koszyka -->
+  <div id="overlay" class="hidden" onclick="toggleCart()"></div>
   <div id="cart-modal" class="hidden">
     <h2>Twój koszyk</h2>
     <ul id="cart-items"></ul>
@@ -115,7 +150,7 @@
     <button onclick="toggleCart()">Zamknij</button>
   </div>
 
-  <!-- Skrypt sklepu -->
+  <!-- 🧠 Skrypt sklepu -->
   <script>
     const products = [
       { name: "Koszulka DominikShop", price: 79.99, img: "https://via.placeholder.com/250x200?text=Koszulka" },
@@ -127,6 +162,7 @@
 
     const productList = document.getElementById("product-list");
     const cartModal = document.getElementById("cart-modal");
+    const overlay = document.getElementById("overlay");
     const cartCount = document.getElementById("cart-count");
     const cartItems = document.getElementById("cart-items");
     const cartTotal = document.getElementById("cart-total");
@@ -144,20 +180,26 @@
       productList.appendChild(div);
     });
 
-    // Dodawanie do koszyka
     function addToCart(index) {
-      cart.push(products[index]);
+      cart.push({ ...products[index] });
       updateCart();
     }
 
-    // Aktualizacja koszyka
+    function removeFromCart(i) {
+      cart.splice(i, 1);
+      updateCart();
+    }
+
     function updateCart() {
       cartItems.innerHTML = "";
       let total = 0;
 
-      cart.forEach(item => {
+      cart.forEach((item, i) => {
         const li = document.createElement("li");
-        li.textContent = `${item.name} - ${item.price.toFixed(2)} PLN`;
+        li.innerHTML = `
+          <span>${item.name} - ${item.price.toFixed(2)} PLN</span>
+          <button onclick="removeFromCart(${i})">Usuń</button>
+        `;
         cartItems.appendChild(li);
         total += item.price;
       });
@@ -166,12 +208,12 @@
       cartTotal.textContent = total.toFixed(2);
     }
 
-    // Pokazywanie / ukrywanie koszyka
     function toggleCart() {
       cartModal.classList.toggle("hidden");
+      overlay.classList.toggle("hidden");
+      document.body.style.overflow = cartModal.classList.contains("hidden") ? "auto" : "hidden";
     }
 
-    // Płatność (Stripe)
     async function checkout() {
       if (cart.length === 0) {
         alert("Koszyk jest pusty!");
