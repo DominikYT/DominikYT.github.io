@@ -1,0 +1,148 @@
+/* ======== Styl dla DominikShop.pl ======== */
+
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #fafafa;
+  color: #333;
+}
+
+header {
+  background: #111;
+  color: #fff;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+nav button {
+  background: #fff;
+  color: #111;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+nav button:hover {
+  background: #f2f2f2;
+}
+
+/* ======== Produkty ======== */
+.product-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.product {
+  background: white;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  text-align: center;
+  transition: transform 0.2s ease;
+}
+
+.product:hover {
+  transform: translateY(-5px);
+}
+
+.product h3 {
+  margin-bottom: 0.5rem;
+}
+
+.product p {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+button {
+  background: #111;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  border-radius: 5px;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+
+button:hover {
+  background: #333;
+}
+
+/* ======== Koszyk ======== */
+#cart-modal {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 2rem;
+  box-shadow: 0 0 15px rgba(0,0,0,0.3);
+  border-radius: 10px;
+  width: 90%;
+  max-width: 400px;
+  z-index: 1000;
+}
+
+#cart-modal h2 {
+  margin-top: 0;
+}
+
+#cart-items {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+#cart-items li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+#cart-modal p {
+  font-weight: bold;
+  text-align: right;
+}
+
+#cart-modal button {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+#close-cart {
+  background: #aaa;
+}
+
+#close-cart:hover {
+  background: #888;
+}
+
+.hidden {
+  display: none;
+}
+
+/* ======== Stopka ======== */
+footer {
+  background: #111;
+  color: white;
+  text-align: center;
+  padding: 1rem;
+  margin-top: 2rem;
+}
