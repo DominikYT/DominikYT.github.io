@@ -1,62 +1,196 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #fafafa;
-  color: #333;
-}
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DominikShop.pl</title>
 
-header {
-  background: #111;
-  color: #fff;
-  padding: 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+  <!-- 🔥 Wbudowany styl -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #fafafa;
+      color: #333;
+    }
 
-.product-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
-  padding: 1rem;
-}
+    header {
+      background: #111;
+      color: #fff;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-.product {
-  background: white;
-  border-radius: 10px;
-  padding: 1rem;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  text-align: center;
-}
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
 
-button {
-  background: #111;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  border-radius: 5px;
-  margin-top: 0.5rem;
-}
+    .cart-btn {
+      background: #fff;
+      color: #111;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+      border: none;
+    }
 
-button:hover {
-  background: #333;
-}
+    .cart-btn:hover {
+      background: #ddd;
+    }
 
-#cart-modal {
-  position: fixed;
-  top: 10%;
-  left: 50%;
-  transform: translateX(-50%);
-  background: white;
-  padding: 2rem;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  border-radius: 10px;
-  width: 90%;
-  max-width: 400px;
-}
+    .product-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
 
-.hidden {
-  display: none;
-}
+    .product {
+      background: white;
+      border-radius: 10px;
+      padding: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+
+    .product img {
+      max-width: 100%;
+      border-radius: 10px;
+    }
+
+    button {
+      background: #111;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 0.5rem;
+    }
+
+    button:hover {
+      background: #333;
+    }
+
+    #cart-modal {
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: white;
+      padding: 2rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      z-index: 100;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="logo">🛍️ DominikShop.pl</div>
+    <button class="cart-btn" onclick="toggleCart()">🛒 Koszyk (<span id="cart-count">0</span>)</button>
+  </header>
+
+  <main>
+    <div class="product-list" id="product-list"></div>
+  </main>
+
+  <!-- Modal koszyka -->
+  <div id="cart-modal" class="hidden">
+    <h2>Twój koszyk</h2>
+    <ul id="cart-items"></ul>
+    <p><strong>Razem:</strong> <span id="cart-total">0.00</span> PLN</p>
+    <button onclick="checkout()">Kup teraz 💳</button>
+    <button onclick="toggleCart()">Zamknij</button>
+  </div>
+
+  <!-- Skrypt sklepu -->
+  <script>
+    const products = [
+      { name: "Koszulka DominikShop", price: 79.99, img: "https://via.placeholder.com/250x200?text=Koszulka" },
+      { name: "Kubek DominikShop", price: 39.99, img: "https://via.placeholder.com/250x200?text=Kubek" },
+      { name: "Czapka DominikShop", price: 59.99, img: "https://via.placeholder.com/250x200?text=Czapka" }
+    ];
+
+    const cart = [];
+
+    const productList = document.getElementById("product-list");
+    const cartModal = document.getElementById("cart-modal");
+    const cartCount = document.getElementById("cart-count");
+    const cartItems = document.getElementById("cart-items");
+    const cartTotal = document.getElementById("cart-total");
+
+    // Tworzenie produktów na stronie
+    products.forEach((p, i) => {
+      const div = document.createElement("div");
+      div.classList.add("product");
+      div.innerHTML = `
+        <img src="${p.img}" alt="${p.name}">
+        <h3>${p.name}</h3>
+        <p>${p.price.toFixed(2)} PLN</p>
+        <button onclick="addToCart(${i})">Dodaj do koszyka</button>
+      `;
+      productList.appendChild(div);
+    });
+
+    // Dodawanie do koszyka
+    function addToCart(index) {
+      cart.push(products[index]);
+      updateCart();
+    }
+
+    // Aktualizacja koszyka
+    function updateCart() {
+      cartItems.innerHTML = "";
+      let total = 0;
+
+      cart.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.name} - ${item.price.toFixed(2)} PLN`;
+        cartItems.appendChild(li);
+        total += item.price;
+      });
+
+      cartCount.textContent = cart.length;
+      cartTotal.textContent = total.toFixed(2);
+    }
+
+    // Pokazywanie / ukrywanie koszyka
+    function toggleCart() {
+      cartModal.classList.toggle("hidden");
+    }
+
+    // Płatność (Stripe)
+    async function checkout() {
+      if (cart.length === 0) {
+        alert("Koszyk jest pusty!");
+        return;
+      }
+
+      const response = await fetch("https://YOUR-BACKEND-URL/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: cart })
+      });
+
+      const data = await response.json();
+      if (data.url) {
+        window.location = data.url;
+      } else {
+        alert("Błąd podczas tworzenia płatności.");
+      }
+    }
+  </script>
+</body>
+</html>
